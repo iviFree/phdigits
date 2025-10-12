@@ -1,20 +1,54 @@
-// middleware.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 
+function arr(...xs: (string | undefined | null | false)[]) {
+  return xs.filter(Boolean) as string[]
+}
+
 export function middleware(request: NextRequest) {
-  // 1) Generar un nonce por respuesta
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
-  // 2) Definir la CSP (ajusta orígenes si usas externos)
-  //    - 'strict-dynamic' permite que los scripts con nonce deleguen a otros scripts añadidos por el framework.
-  //    - Añade dominios a script-src / connect-src / img-src si usas analytics, cdn, etc.
+  const SUPABASE_URL =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    ''
+
+  let supabaseHttpOrigin: string | undefined
+  let supabaseWsOrigin: string | undefined
+
+  try {
+    if (SUPABASE_URL) {
+      const u = new URL(SUPABASE_URL) 
+      supabaseHttpOrigin = `${u.protocol}//${u.host}`
+      supabaseWsOrigin = u.protocol === 'https:'
+        ? `wss://${u.host}`
+        : u.protocol === 'http:'
+        ? `ws://${u.host}`
+        : undefined
+    }
+  } catch {
+  }
+
+  const connectSrc = arr(
+    `'self'`,
+    supabaseHttpOrigin,
+    supabaseWsOrigin
+  ).join(' ')
+
+  const imgSrc = arr(
+    `'self'`,
+    'data:',
+    'blob:',
+    supabaseHttpOrigin
+  ).join(' ')
+
   const csp = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
     style-src 'self' 'nonce-${nonce}';
-    img-src 'self' data: blob:;
+    img-src ${imgSrc};
     font-src 'self';
-    connect-src 'self';
+    connect-src ${connectSrc};
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -23,17 +57,16 @@ export function middleware(request: NextRequest) {
   `
   const value = csp.replace(/\s{2,}/g, ' ').trim()
 
-  // 3) Propagar el nonce en los headers de la request (lo leemos en app/layout.tsx)
+  // Propaga el nonce en la request para poder leerlo en app/layout.tsx
   const reqHeaders = new Headers(request.headers)
   reqHeaders.set('x-nonce', nonce)
 
-  // 4) Continuar la request con los headers modificados y devolver la CSP
   const res = NextResponse.next({ request: { headers: reqHeaders } })
   res.headers.set('Content-Security-Policy', value)
   return res
 }
 
-// ⚠️ No apliques la CSP a assets estáticos / prefetch (evita bloqueos innecesarios)
+// Evitar aplicar CSP a assets estáticos / prefetch
 export const config = {
   matcher: [{
     source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
