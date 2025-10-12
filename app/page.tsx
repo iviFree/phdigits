@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseBrowser } from "@/lib/supabaseClient";
 import {
   emailSchema,
   passwordSchema,
@@ -52,16 +52,18 @@ export default function Page() {
 
     setLoading(true);
     try {
+      const supabase = getSupabaseBrowser();
+
       const { data, error } = await supabase.rpc("rpc_counter_validate", {
         p_mail: parsedEmail.data,
         p_password: parsedPass.data,
       });
 
       if (error) {
-        const pgErr = error as PgError; // ❌ quitamos "any", tipamos shape mínimo
+        const pgErr = error as PgError;
         if (pgErr.code === "42883") {
           setMsg(
-            "Backend sin pgcrypto/citext o RPC mal creada (crypt() no disponible). Avise a soporte."
+            "Backend sin pgcrypto/citext o RPC mal creada (crypt() no disponible)."
           );
         } else if (
           pgErr.code === "PGRST116" ||

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseBrowser } from "@/lib/supabaseClient";
 import { codeSchema, normalizeCode, LocalRateLimiter } from "@/lib/validation";
 import { getCounterEmail, clearCounterEmail } from "@/lib/session";
 
@@ -74,10 +74,11 @@ export default function Dashboard() {
 
     setLoading(true);
     try {
+      const supabase = getSupabaseBrowser();
+
       const { data, error } = await supabase.rpc(
         "rpc_verify_and_consume_code",
         {
-          // ❌ quitamos "as any"; el schema ya garantiza string de longitud 4
           p_codigo: parsed.data,
           p_counter_email: counterEmail,
         }

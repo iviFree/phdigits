@@ -1,10 +1,27 @@
 // lib/supabaseClient.ts
-import { createClient } from "@supabase/supabase-js";
+// Cliente de Supabase "lazy": solo se crea cuando lo pides (y en el browser)
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// NOTA: solo usamos RPCs permitidos por RLS. No almacenamos tokens propios aquí.
-export const supabase = createClient(url, anon, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+let browserClient: SupabaseClient | null = null;
+
+/**
+ * Obtiene un cliente de Supabase para el navegador.
+ * Lee las envs públicas SOLO cuando se invoca (evita fallar en prerender).
+ */
+export function getSupabaseBrowser(): SupabaseClient {
+  if (browserClient) return browserClient;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    // Mensaje claro si faltan variables (sucede en local o mal configurado en Vercel)
+    throw new Error(
+      "Faltan variables de entorno: NEXT_PUBLIC_SUPABASE_URL y/o NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
+
+  browserClient = createClient(url, anonKey);
+  return browserClient;
+}
