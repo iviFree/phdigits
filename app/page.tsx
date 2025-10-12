@@ -1,14 +1,11 @@
-// app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 import { supabase } from "@/lib/supabaseClient";
 import { emailSchema, passwordSchema, LocalRateLimiter } from "@/lib/validation";
 import { setCounterEmail, getCounterEmail } from "@/lib/session";
 
-// Rate limit local: 10 intentos por minuto en el login
 const limiter =
   typeof window !== "undefined" ? new LocalRateLimiter("counter-login", 10, 60_000) : null;
 
@@ -20,7 +17,6 @@ export default function Page() {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    // Si ya hay sesión, redirige al dashboard
     const existing = getCounterEmail();
     if (existing) router.replace("/dashboard");
   }, [router]);
@@ -34,7 +30,6 @@ export default function Page() {
       return;
     }
 
-    // Validaciones fuertes de entrada
     const parsedEmail = emailSchema.safeParse(email);
     const parsedPass = passwordSchema.safeParse(pass);
     if (!parsedEmail.success) {
@@ -48,14 +43,12 @@ export default function Page() {
 
     setLoading(true);
     try {
-      // Llamada RPC a Supabase
       const { data, error } = await supabase.rpc("rpc_counter_validate", {
         p_mail: parsedEmail.data,
         p_password: parsedPass.data,
       });
 
       if (error) {
-        // Diferencia casos comunes para diagnóstico claro
         const anyErr = error as any;
         if (anyErr.code === "42883") {
           setMsg("Backend sin pgcrypto/citext o RPC mal creada (crypt() no disponible). Avise a soporte.");
@@ -83,55 +76,78 @@ export default function Page() {
   }
 
   return (
-    <div className="card">
-      <h1>Ingreso de Counter</h1>
-      <p className="helper">Introduce tu correo y contraseña.</p>
+    <div className="card shadow-sm mx-auto" style={{ maxWidth: "420px" }}>
+      <div className="card-body">
+        <h2 className="card-title text-center mb-4">Ingreso de Counter</h2>
 
-      <form onSubmit={onSubmit} autoComplete="off" noValidate>
-        <label>
-          Correo
-          <input
-            className="input"
-            type="email"
-            inputMode="email"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            maxLength={254}
-          />
-        </label>
-
-        <label>
-          Contraseña
-          <input
-            className="input"
-            type="password"
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-            required
-            minLength={8}
-            maxLength={128}
-          />
-        </label>
-
-        <button className="btn" disabled={loading}>
-          {loading ? "Validando..." : "Entrar"}
-        </button>
-      </form>
-
-      {msg && (
-        <p className="error" role="alert" aria-live="assertive">
-          {msg}
+        <p className="text-muted text-center">
+          Introduce tu correo y contraseña.
         </p>
-      )}
 
-      <p className="helper">
-        Tu contraseña se valida contra el hash almacenado en la base de datos mediante RPC segura
-        (no se guarda en el navegador).
-      </p>
+        <form onSubmit={onSubmit} autoComplete="off" noValidate>
+          <div className="mb-3">
+            <label htmlFor="email" className="form-label">
+              Correo electrónico
+            </label>
+            <input
+              id="email"
+              className="form-control"
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              maxLength={254}
+              placeholder="counter@ejemplo.com"
+            />
+          </div>
+
+          <div className="mb-3">
+            <label htmlFor="password" className="form-label">
+              Contraseña
+            </label>
+            <input
+              id="password"
+              className="form-control"
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              required
+              minLength={8}
+              maxLength={128}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-dark w-100"
+            disabled={loading}
+          >
+            {loading ? "Validando..." : "Entrar"}
+          </button>
+        </form>
+
+        {msg && (
+          <div
+            className={`alert mt-3 ${
+              msg.includes("ACCESO") || msg.includes("correctas")
+                ? "alert-success"
+                : "alert-danger"
+            }`}
+            role="alert"
+          >
+            {msg}
+          </div>
+        )}
+
+        <p className="text-muted small mt-3 mb-0 text-center">
+          Tu contraseña se valida contra el hash en la base de datos mediante RPC segura.
+        </p>
+      </div>
     </div>
   );
 }
