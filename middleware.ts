@@ -2,10 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Genera un nonce por respuesta
+  // 1) Generar un nonce por respuesta
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
-  // Tu CSP (ajústala si usas orígenes externos)
+  // 2) Definir la CSP (ajusta orígenes si usas externos)
+  //    - 'strict-dynamic' permite que los scripts con nonce deleguen a otros scripts añadidos por el framework.
+  //    - Añade dominios a script-src / connect-src / img-src si usas analytics, cdn, etc.
   const csp = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
@@ -21,16 +23,17 @@ export function middleware(request: NextRequest) {
   `
   const value = csp.replace(/\s{2,}/g, ' ').trim()
 
-  // Propaga el nonce a los headers de la request para leerlo en el layout
+  // 3) Propagar el nonce en los headers de la request (lo leemos en app/layout.tsx)
   const reqHeaders = new Headers(request.headers)
   reqHeaders.set('x-nonce', nonce)
 
+  // 4) Continuar la request con los headers modificados y devolver la CSP
   const res = NextResponse.next({ request: { headers: reqHeaders } })
   res.headers.set('Content-Security-Policy', value)
   return res
 }
 
-// Evita aplicar CSP a assets estáticos/prefetch
+// ⚠️ No apliques la CSP a assets estáticos / prefetch (evita bloqueos innecesarios)
 export const config = {
   matcher: [{
     source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
