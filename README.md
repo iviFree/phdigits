@@ -3,7 +3,7 @@ Este sistema permite la validación de correos electrónicos y códigos únicos 
 
 ---
 
-## Tecnologías utilizadas
+## Tecnología
 
 - **Next.js 15.5.4** (framework React de nueva generación)
 - **React 18**
@@ -16,7 +16,6 @@ Este sistema permite la validación de correos electrónicos y códigos únicos 
 
 ## Requisitos previos
 
-Antes de ejecutar el proyecto, asegúrate de tener instalado:
 
 - **Node.js** v18.17.0 o superior  
 - **npm** (incluido con Node.js)  
