@@ -5,26 +5,29 @@ Este sistema permite la validación de correos electrónicos y códigos únicos 
 
 ## Tecnología
 
-- **Next.js 15.5.4** 
+- **Next.js 15.5.4**
 - **React 18**
-- **Supabase** 
-- **Bootstrap 5** 
-- **pgcrypto / citext** 
-- **Vercel** 
+- **Supabase**
+- **Bootstrap 5**
+- **pgcrypto / citext**
+- **Vercel**
 
 ---
 
 ## Requisitos previos
 
-
-- **Node.js** v18.17.0 o superior  
+- **Node.js** v18.17.0 o superior
 
 ---
 
 ## Instalación
 
-
 ```bash
 git clone https://github.com/iviFree/phdigits.git
 cd phdigits
 npm install
+```
+
+Alonso Antunez
+Desarrollado con Next.js y Supabase
+GitHub: @iviFree
