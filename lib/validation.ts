@@ -1,7 +1,5 @@
-// lib/validation.ts
 import { z } from "zod";
 
-// Email RFC-básico, normalizamos a lowercase (aunque tu DB usa CITEXT).
 export const emailSchema = z.string()
   .trim()
   .toLowerCase()
@@ -9,19 +7,15 @@ export const emailSchema = z.string()
   .max(254)
   .email();
 
-// Password: validación mínima (el hash se maneja en DB), aquí solo saneamos longitud
 export const passwordSchema = z.string()
   .min(8)
   .max(128);
 
-// Código: exactamente 4 chars, 3 dígitos y 1 letra mayúscula en cualquier posición.
-// Normalizamos: quitamos espacios, upper-case, bloqueamos caracteres no ASCII alfanum.
 export const normalizeCode = (raw: string) => {
   const s = (raw || "")
     .trim()
     .toUpperCase()
     .replace(/\s+/g, "");
-  // Eliminamos cualquier char no ASCII alfanum para mitigar homoglifos
   return s.replace(/[^A-Z0-9]/g, "");
 };
 
@@ -34,7 +28,6 @@ export const codeSchema = z.string()
     message: "Código inválido (3 dígitos y 1 letra mayúscula).",
   });
 
-// Rate-limit simple por dispositivo (token bucket en memoria + sessionStorage)
 export class LocalRateLimiter {
   private capacity: number;
   private refillMs: number;

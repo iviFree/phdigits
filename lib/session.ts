@@ -1,4 +1,3 @@
-// lib/session.ts
 const KEY = "counter:email";
 
 export const setCounterEmail = (email: string) => {
