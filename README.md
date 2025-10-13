@@ -1,4 +1,3 @@
-Proyecto desarrollado con **Next.js 15**, **React** y **Supabase**.  
 Este sistema permite la validación de correos electrónicos y códigos únicos de 4 dígitos, integrando autenticación segura mediante funciones RPC y extensiones de PostgreSQL.
 
 ---
