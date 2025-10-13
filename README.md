@@ -18,13 +18,11 @@ Este sistema permite la validación de correos electrónicos y códigos únicos 
 
 
 - **Node.js** v18.17.0 o superior  
-- **npm** (incluido con Node.js)  
 
 ---
 
 ## Instalación
 
-Clona este repositorio e instala las dependencias:
 
 ```bash
 git clone https://github.com/iviFree/phdigits.git
