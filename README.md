@@ -19,7 +19,6 @@ Este sistema permite la validación de correos electrónicos y códigos únicos 
 
 - **Node.js** v18.17.0 o superior  
 - **npm** (incluido con Node.js)  
-- Una cuenta y proyecto activo en **[Supabase](https://supabase.com/)**  
 
 ---
 
