@@ -5,12 +5,12 @@ Este sistema permite la validación de correos electrónicos y códigos únicos 
 
 ## Tecnología
 
-- **Next.js 15.5.4** (framework React de nueva generación)
+- **Next.js 15.5.4** 
 - **React 18**
-- **Supabase** (base de datos PostgreSQL + autenticación)
-- **Bootstrap 5** (diseño responsivo)
-- **pgcrypto / citext** (extensiones PostgreSQL para hashing y correos case-insensitive)
-- **Vercel** (plataforma de despliegue)
+- **Supabase** 
+- **Bootstrap 5** 
+- **pgcrypto / citext** 
+- **Vercel** 
 
 ---
 
