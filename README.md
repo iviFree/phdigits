@@ -29,4 +29,4 @@ npm install
 
 Alonso Antunez.  
 Desarrollado con Next.js.  
-GitHub: @iviFree.  
+GitHub: @iviFree.
