@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PostgrestSingleResponse } from "@supabase/supabase-js";
+import { PostgrestSingleResponse, PostgrestError } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabaseClient";
 import { codeSchema, normalizeCode, LocalRateLimiter } from "@/lib/validation";
 import { getCounterEmail, clearCounterEmail } from "@/lib/session";
@@ -22,9 +22,7 @@ type RpcRow = {
 
 type RpcResp = RpcRow[];
 
-/**
- * Normaliza el campo `ok` del RPC usando únicamente los literales del tipo.
- */
+/** Normaliza el campo `ok` del RPC usando únicamente los literales del tipo. */
 function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
   if (v === true || v === 1 || v === "t" || v === "true") return true;
   if (v === false || v === 0 || v === "f" || v === "false") return false;
@@ -96,7 +94,7 @@ export default function Dashboard() {
     try {
       const supabase = getSupabaseBrowser();
 
-      // ❗ Importante: no usar genérico en rpc<...>; tipeamos la respuesta.
+      // ❗ No usar genérico en rpc<...>; tipeamos la respuesta
       const resp = (await supabase.rpc(
         "rpc_verify_and_consume_code",
         {
@@ -108,18 +106,8 @@ export default function Dashboard() {
       const { data, error } = resp;
 
       if (error) {
-        console.error(error);
-        // Mensajes útiles para casos comunes
-        const anyErr = error as any;
-        if (anyErr?.code === "42883") {
-          setMsg(
-            "RPC no existe o falta pgcrypto/citext. Revisa la creación de funciones."
-          );
-        } else if (anyErr?.code === "PGRST116" || anyErr?.message?.includes("404")) {
-          setMsg("RPC no encontrada o sin permisos (GRANT EXECUTE).");
-        } else {
-          setMsg("Error al verificar el código.");
-        }
+        // `error` ya es PostgrestError, no necesitamos `any`
+        handleRpcError(error);
         return;
       }
 
@@ -147,6 +135,19 @@ export default function Dashboard() {
       setMsg("Error inesperado.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleRpcError(error: PostgrestError) {
+    console.error("RPC error:", error);
+    if (error.code === "42883") {
+      setMsg(
+        "RPC no existe o falta pgcrypto/citext. Revisa la creación de funciones."
+      );
+    } else if (error.code === "PGRST116" || error.message?.includes("404")) {
+      setMsg("RPC no encontrada o sin permisos (GRANT EXECUTE).");
+    } else {
+      setMsg("Error al verificar el código.");
     }
   }
 
