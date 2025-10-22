@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabaseClient";
 import { codeSchema, normalizeCode, LocalRateLimiter } from "@/lib/validation";
 import { getCounterEmail, clearCounterEmail } from "@/lib/session";
@@ -25,11 +26,8 @@ type RpcResp = RpcRow[];
  * Normaliza el campo `ok` del RPC usando únicamente los literales del tipo.
  */
 function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
-  // Truthy esperados desde Postgres/PLpgSQL
   if (v === true || v === 1 || v === "t" || v === "true") return true;
-  // Falsy esperados
   if (v === false || v === 0 || v === "f" || v === "false") return false;
-  // Cualquier otro/undefined => false
   return false;
 }
 
@@ -58,6 +56,15 @@ export default function Dashboard() {
       requestAnimationFrame(() => codeInputRef.current?.focus());
     }
   }, [router]);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Fuerza MAYÚSCULAS, solo A-Z/0-9, máx 4
+    const upper = (e.target.value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 4);
+    setCode(upper);
+  }
 
   async function onVerify(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -89,17 +96,30 @@ export default function Dashboard() {
     try {
       const supabase = getSupabaseBrowser();
 
-      const { data, error } = await supabase.rpc<RpcResp>(
+      // ❗ Importante: no usar genérico en rpc<...>; tipeamos la respuesta.
+      const resp = (await supabase.rpc(
         "rpc_verify_and_consume_code",
         {
           p_codigo: parsed.data,
           p_counter_email: counterEmail,
         }
-      );
+      )) as PostgrestSingleResponse<RpcResp>;
+
+      const { data, error } = resp;
 
       if (error) {
         console.error(error);
-        setMsg("Error al verificar el código.");
+        // Mensajes útiles para casos comunes
+        const anyErr = error as any;
+        if (anyErr?.code === "42883") {
+          setMsg(
+            "RPC no existe o falta pgcrypto/citext. Revisa la creación de funciones."
+          );
+        } else if (anyErr?.code === "PGRST116" || anyErr?.message?.includes("404")) {
+          setMsg("RPC no encontrada o sin permisos (GRANT EXECUTE).");
+        } else {
+          setMsg("Error al verificar el código.");
+        }
         return;
       }
 
@@ -120,8 +140,8 @@ export default function Dashboard() {
         setMsg("ACCESO DENEGADO: CODIGO INVALIDO");
       }
 
-      // Mantener readyForNext=true para que el botón permanezca como "Verificar otro código"
-      setCode(""); // opcional: limpia el campo tras el intento
+      // Mantener readyForNext=true para mostrar "Verificar otro código"
+      setCode(""); // limpia el campo tras el intento
     } catch (err) {
       console.error(err);
       setMsg("Error inesperado.");
@@ -177,9 +197,7 @@ export default function Dashboard() {
                     type="text"
                     inputMode="text"
                     value={code}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setCode(e.target.value.toUpperCase())
-                    }
+                    onChange={handleChange}
                     placeholder=""
                     required
                     className="w-100"
@@ -188,6 +206,7 @@ export default function Dashboard() {
                     autoComplete="off"
                     spellCheck={false}
                     maxLength={4}
+                    style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
                   />
                 </div>
               </div>
@@ -201,7 +220,7 @@ export default function Dashboard() {
 
                 <div className="col-6">
                   {!readyForNext ? (
-                    <button type="submit" disabled={loading} className="w-100">
+                    <button type="submit" disabled={loading || code.length !== 4} className="w-100">
                       {loading ? "Verificando..." : "Verificar código"}
                     </button>
                   ) : (
