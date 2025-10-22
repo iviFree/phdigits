@@ -33,7 +33,7 @@ function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
   return false;
 }
 
-export default function Dashboard(): JSX.Element {
+export default function Dashboard() {
   const router = useRouter();
   const [counterEmail, setCounterEmail] = useState<string | null>(null);
   const [code, setCode] = useState<string>("");
