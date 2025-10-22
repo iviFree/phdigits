@@ -22,12 +22,14 @@ type RpcRow = {
 type RpcResp = RpcRow[];
 
 /**
- * Normaliza el campo `ok` del RPC sin usar `.trim()` (evita el error de TS).
+ * Normaliza el campo `ok` del RPC usando únicamente los literales del tipo.
  */
 function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
-  // Casos "truthy" esperados desde Postgres/PLpgSQL
-  if (v === true || v === "t" || v === "true" || v === 1 || v === "1") return true;
-  // Todo lo demás se considera false
+  // Truthy esperados desde Postgres/PLpgSQL
+  if (v === true || v === 1 || v === "t" || v === "true") return true;
+  // Falsy esperados
+  if (v === false || v === 0 || v === "f" || v === "false") return false;
+  // Cualquier otro/undefined => false
   return false;
 }
 
@@ -35,7 +37,6 @@ export default function Dashboard(): JSX.Element {
   const router = useRouter();
   const [counterEmail, setCounterEmail] = useState<string | null>(null);
   const [code, setCode] = useState<string>("");
-  const [status, setStatus] = useState<"idle" | "ok" | "fail" | "error">("idle");
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [lastSuccess, setLastSuccess] = useState<{
@@ -62,7 +63,6 @@ export default function Dashboard(): JSX.Element {
     e.preventDefault();
 
     setMsg(null);
-    setStatus("idle");
     setLastSuccess(null);
 
     // Deshabilita el input y cambia el botón
@@ -70,20 +70,17 @@ export default function Dashboard(): JSX.Element {
 
     if (!counterEmail) {
       setMsg("Sesión expirada. Ingresa nuevamente.");
-      setStatus("fail");
       return;
     }
 
     if (limiter && !limiter.tryConsume()) {
       setMsg("Demasiados intentos. Espera e inténtalo de nuevo.");
-      setStatus("fail");
       return;
     }
 
     const normalized = normalizeCode(code);
     const parsed = codeSchema.safeParse(normalized);
     if (!parsed.success) {
-      setStatus("fail");
       setMsg("Código inválido.");
       return;
     }
@@ -102,7 +99,6 @@ export default function Dashboard(): JSX.Element {
 
       if (error) {
         console.error(error);
-        setStatus("error");
         setMsg("Error al verificar el código.");
         return;
       }
@@ -114,7 +110,6 @@ export default function Dashboard(): JSX.Element {
       const isOk = rpcOkToBoolean(row?.ok);
 
       if (row && isOk) {
-        setStatus("ok");
         setMsg("ACCESO PERMITIDO");
         setLastSuccess({
           nombre: row.nombre_completo ?? undefined,
@@ -122,15 +117,13 @@ export default function Dashboard(): JSX.Element {
           at: row.consumido_en ?? undefined,
         });
       } else {
-        setStatus("fail");
         setMsg("ACCESO DENEGADO: CODIGO INVALIDO");
       }
 
       // Mantener readyForNext=true para que el botón permanezca como "Verificar otro código"
-      setCode("");
+      setCode(""); // opcional: limpia el campo tras el intento
     } catch (err) {
       console.error(err);
-      setStatus("error");
       setMsg("Error inesperado.");
     } finally {
       setLoading(false);
@@ -141,7 +134,6 @@ export default function Dashboard(): JSX.Element {
     setReadyForNext(false);
     setCode("");
     setMsg(null);
-    setStatus("idle");
     setLastSuccess(null);
     requestAnimationFrame(() => codeInputRef.current?.focus());
   }
@@ -228,11 +220,7 @@ export default function Dashboard(): JSX.Element {
 
           <div className="row mt-4 mb-2">
             <div className="col-12 text-center">
-              {msg && (
-                <p className="message">
-                  {msg}
-                </p>
-              )}
+              {msg && <p className="message">{msg}</p>}
             </div>
           </div>
 
@@ -244,7 +232,9 @@ export default function Dashboard(): JSX.Element {
                     <p className="message">Nombre: {lastSuccess.nombre}</p>
                   )}
                   {lastSuccess.correo && (
-                    <p className="message">Correo electrónico: {lastSuccess.correo}</p>
+                    <p className="message">
+                      Correo electrónico: {lastSuccess.correo}
+                    </p>
                   )}
                   {lastSuccess.at && (
                     <p className="message">
