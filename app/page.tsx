@@ -9,6 +9,7 @@ import {
   LocalRateLimiter,
 } from "@/lib/validation";
 import { setCounterEmail, getCounterEmail } from "@/lib/session";
+import Image from 'next/image';
 
 const limiter =
   typeof window !== "undefined"
@@ -92,69 +93,84 @@ export default function Page() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h2 className="text-2xl font-semibold mb-2">Ingreso de Counter</h2>
-      <p className="text-sm text-gray-600 mb-6">
-        Introduce tu correo y contraseña.
-      </p>
-
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm mb-1" htmlFor="email">
-            Correo electrónico
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setEmail(e.target.value)
-            }
-            required
-            maxLength={254}
-            placeholder="counter@ejemplo.com"
-            className="w-full rounded border px-3 py-2"
-          />
+    <main className=" container-fluid containerMain">
+      <div className="row d-flex justify-content-center align-items-center h-100">
+        <div className="col-12 col-sm-12 col-md-10 col-lg-7 col-xl-6 col-xxl-6 d-flex justify-content-center flex-column p-5 formContainer">
+          <div className="row m-3 mb-5">
+            <div className="col-12 text-center">
+              <img src="logoPalaciodeHierro.png" />
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-12 text-center">
+              <p className="">Introduce tu correo y contraseña.</p>
+            </div>
+          </div>
+          <form onSubmit={onSubmit} className="row">
+            <div className="col-12">
+              <div className="row mb-1">
+                <div className="col-12">
+                  <label className="" htmlFor="email">Correo</label>
+                </div>
+              </div>
+              <div className="row mb-1">
+                <div className="col-12">
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(e.target.value)
+                    }
+                    required
+                    maxLength={254}
+                    placeholder="counter@ejemplo.com"
+                    className="w-100"
+                  />
+                </div>
+              </div>
+              <div className="row mb-1">
+                <div className="col-12">
+                  <label className="" htmlFor="pass">Contraseña</label>
+                </div>
+              </div>
+              <div className="row mb-4">
+                <div className="col-12">
+                  <input
+                    id="pass"
+                    type="password"
+                    value={pass}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPass(e.target.value)
+                    }
+                    required
+                    minLength={8}
+                    maxLength={128}
+                    placeholder="••••••••"
+                    className="w-100"
+                  />
+                </div>
+              </div>
+              <div className="row">
+                <div className="col-12">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="buttonLogin"
+                  >
+                    {loading ? "Validando..." : "Entrar"}
+                  </button>
+                  {msg && (
+                    <p className="">
+                      {msg}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
-
-        <div>
-          <label className="block text-sm mb-1" htmlFor="pass">
-            Contraseña
-          </label>
-          <input
-            id="pass"
-            type="password"
-            value={pass}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setPass(e.target.value)
-            }
-            required
-            minLength={8}
-            maxLength={128}
-            placeholder="••••••••"
-            className="w-full rounded border px-3 py-2"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black text-white py-2"
-        >
-          {loading ? "Validando..." : "Entrar"}
-        </button>
-
-        {msg && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
-            {msg}
-          </p>
-        )}
-      </form>
-
-      <p className="text-xs text-gray-500 mt-6">
-        Tu contraseña se valida contra el hash en la base de datos mediante RPC
-        segura.
-      </p>
+      </div>
     </main>
   );
 }
