@@ -9,6 +9,29 @@ body {
   align-items: center;
   color: rgba(255, 255, 255, 1);
 }
+/* Logo responsive y proporcional */
+.logo-container {
+  display: flex;
+  justify-self: center;
+  align-items: center;
+  width: 100%;
+  max-width: 366px;
+}
+
+.logo-palacio {
+  width: 100%;
+  max-width: 366px; /* ajusta según tu diseño */
+  height: auto;
+  object-fit: contain;
+}
+
+/* Puedes hacerla más grande en pantallas grandes */
+@media (min-width: 992px) {
+  .logo-palacio {
+    max-width: 350px;
+  }
+}
+
 .formContainer {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);

@@ -98,22 +98,24 @@ export default function Page() {
         <div className="col-12 col-sm-12 col-md-10 col-lg-7 col-xl-6 col-xxl-6 d-flex justify-content-center flex-column p-5 formContainer">
           <div className="row m-3 mb-5">
             <div className="col-12 text-center">
-              <Image
-                src="/logoPalaciodeHierro.png"
-                alt="Logo Palacio de Hierro"
-                width={220}
-                height={60}
-                priority
-              />
+              <div className="logo-container text-center">
+                <Image
+                  src="/logoPalaciodeHierro.png"
+                  alt="Logo Palacio de Hierro"
+                  className="logo-palacio img-fluid"
+                  width={0}
+                  height={0}
+                  sizes="100vw"
+                  priority
+                />
+              </div>
             </div>
           </div>
-
           <div className="row">
             <div className="col-12 text-center">
               <p>Introduce tu correo y contraseña.</p>
             </div>
           </div>
-
           <form onSubmit={onSubmit} className="row">
             <div className="col-12">
               <div className="row mb-1">
