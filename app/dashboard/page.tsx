@@ -21,7 +21,16 @@ type RpcRow = {
 
 type RpcResp = RpcRow[];
 
-export default function Dashboard() {
+function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
+  if (v === true || v === "t" || v === "true" || v === 1) return true;
+  if (v === false || v === "f" || v === "false" || v === 0) return false;
+  // Si llega string "1"
+  if (typeof v === "string" && v.trim() === "1") return true;
+  if (typeof v === "string" && v.trim() === "0") return false;
+  return false;
+}
+
+export default function Dashboard(): JSX.Element {
   const router = useRouter();
   const [counterEmail, setCounterEmail] = useState<string | null>(null);
   const [code, setCode] = useState<string>("");
@@ -44,6 +53,8 @@ export default function Dashboard() {
       router.replace("/");
     } else {
       setCounterEmail(email);
+      // Enfoca el input al entrar
+      requestAnimationFrame(() => codeInputRef.current?.focus());
     }
   }, [router]);
 
@@ -55,8 +66,7 @@ export default function Dashboard() {
     setStatus("idle");
     setLastSuccess(null);
 
-    // 🔑 Desde este punto, cumplimos tu requerimiento:
-    // deshabilitar el input y cambiar el botón a "Verificar otro código"
+    // Deshabilita el input y cambia el botón
     setReadyForNext(true);
 
     if (!counterEmail) {
@@ -75,9 +85,7 @@ export default function Dashboard() {
     const parsed = codeSchema.safeParse(normalized);
     if (!parsed.success) {
       setStatus("fail");
-      setMsg(
-        "Código inválido."
-      );
+      setMsg("Código inválido.");
       return;
     }
 
@@ -85,7 +93,7 @@ export default function Dashboard() {
     try {
       const supabase = getSupabaseBrowser();
 
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc<RpcResp>(
         "rpc_verify_and_consume_code",
         {
           p_codigo: parsed.data,
@@ -100,14 +108,11 @@ export default function Dashboard() {
         return;
       }
 
-      const rows = (data || []) as RpcResp;
-      const row = rows?.[0];
+      const rows = data ?? [];
+      const row = rows[0];
       console.log("RPC row:", row);
 
-      // Normaliza posibles valores de ok
-      const okVal = row?.ok as any;
-      const isOk =
-        okVal === true || okVal === "t" || okVal === "true" || okVal === 1 || okVal === "1";
+      const isOk = rpcOkToBoolean(row?.ok);
 
       if (row && isOk) {
         setStatus("ok");
@@ -134,7 +139,7 @@ export default function Dashboard() {
     }
   }
 
-  function onResetVerify() {
+  function onResetVerify(): void {
     // Habilita el input y limpia todo para el siguiente intento
     setReadyForNext(false);
     setCode("");
@@ -144,7 +149,7 @@ export default function Dashboard() {
     requestAnimationFrame(() => codeInputRef.current?.focus());
   }
 
-  function onLogout() {
+  function onLogout(): void {
     clearCounterEmail();
     router.replace("/");
   }
@@ -181,6 +186,7 @@ export default function Dashboard() {
                     id="code"
                     ref={codeInputRef}
                     type="text"
+                    inputMode="text"
                     value={code}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setCode(e.target.value.toUpperCase())
@@ -188,7 +194,11 @@ export default function Dashboard() {
                     placeholder=""
                     required
                     className="w-100"
-                    disabled={loading || readyForNext} // ← clave
+                    disabled={loading || readyForNext}
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={4}
                   />
                 </div>
               </div>
@@ -245,11 +255,11 @@ export default function Dashboard() {
                     <p className="message">Nombre: {lastSuccess.nombre}</p>
                   )}
                   {lastSuccess.correo && (
-                    <p className="message">Correo electronico: {lastSuccess.correo}</p>
+                    <p className="message">Correo electrónico: {lastSuccess.correo}</p>
                   )}
                   {lastSuccess.at && (
                     <p className="message">
-                      Fecha y Hora de entrada:{" "}
+                      Fecha y hora de entrada:{" "}
                       {new Date(lastSuccess.at).toLocaleString()}
                     </p>
                   )}
