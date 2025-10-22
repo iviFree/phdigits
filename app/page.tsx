@@ -9,7 +9,7 @@ import {
   LocalRateLimiter,
 } from "@/lib/validation";
 import { setCounterEmail, getCounterEmail } from "@/lib/session";
-import Image from 'next/image';
+import Image from "next/image";
 
 const limiter =
   typeof window !== "undefined"
@@ -93,24 +93,32 @@ export default function Page() {
   }
 
   return (
-    <main className=" container-fluid containerMain">
+    <main className="container-fluid containerMain">
       <div className="row d-flex justify-content-center align-items-center h-100">
         <div className="col-12 col-sm-12 col-md-10 col-lg-7 col-xl-6 col-xxl-6 d-flex justify-content-center flex-column p-5 formContainer">
           <div className="row m-3 mb-5">
             <div className="col-12 text-center">
-              <img src="logoPalaciodeHierro.png" />
+              <Image
+                src="/logoPalaciodeHierro.png"
+                alt="Logo Palacio de Hierro"
+                width={220}
+                height={60}
+                priority
+              />
             </div>
           </div>
+
           <div className="row">
             <div className="col-12 text-center">
-              <p className="">Introduce tu correo y contraseña.</p>
+              <p>Introduce tu correo y contraseña.</p>
             </div>
           </div>
+
           <form onSubmit={onSubmit} className="row">
             <div className="col-12">
               <div className="row mb-1">
                 <div className="col-12">
-                  <label className="" htmlFor="email">Correo</label>
+                  <label htmlFor="email">Correo</label>
                 </div>
               </div>
               <div className="row mb-1">
@@ -126,12 +134,15 @@ export default function Page() {
                     maxLength={254}
                     placeholder="counter@ejemplo.com"
                     className="w-100"
+                    autoComplete="email"
+                    inputMode="email"
                   />
                 </div>
               </div>
+
               <div className="row mb-1">
                 <div className="col-12">
-                  <label className="" htmlFor="pass">Contraseña</label>
+                  <label htmlFor="pass">Contraseña</label>
                 </div>
               </div>
               <div className="row mb-4">
@@ -148,23 +159,17 @@ export default function Page() {
                     maxLength={128}
                     placeholder="••••••••"
                     className="w-100"
+                    autoComplete="current-password"
                   />
                 </div>
               </div>
+
               <div className="row">
                 <div className="col-12">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="buttonLogin"
-                  >
+                  <button type="submit" disabled={loading} className="buttonLogin">
                     {loading ? "Validando..." : "Entrar"}
                   </button>
-                  {msg && (
-                    <p className="">
-                      {msg}
-                    </p>
-                  )}
+                  {msg && <p className="">{msg}</p>}
                 </div>
               </div>
             </div>

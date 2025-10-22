@@ -21,12 +21,13 @@ type RpcRow = {
 
 type RpcResp = RpcRow[];
 
+/**
+ * Normaliza el campo `ok` del RPC sin usar `.trim()` (evita el error de TS).
+ */
 function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
-  if (v === true || v === "t" || v === "true" || v === 1) return true;
-  if (v === false || v === "f" || v === "false" || v === 0) return false;
-  // Si llega string "1"
-  if (typeof v === "string" && v.trim() === "1") return true;
-  if (typeof v === "string" && v.trim() === "0") return false;
+  // Casos "truthy" esperados desde Postgres/PLpgSQL
+  if (v === true || v === "t" || v === "true" || v === 1 || v === "1") return true;
+  // Todo lo demás se considera false
   return false;
 }
 
@@ -53,7 +54,6 @@ export default function Dashboard(): JSX.Element {
       router.replace("/");
     } else {
       setCounterEmail(email);
-      // Enfoca el input al entrar
       requestAnimationFrame(() => codeInputRef.current?.focus());
     }
   }, [router]);
@@ -61,7 +61,6 @@ export default function Dashboard(): JSX.Element {
   async function onVerify(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    // Limpia mensajes previos y coloca el UI en modo "post-verificación"
     setMsg(null);
     setStatus("idle");
     setLastSuccess(null);
@@ -128,8 +127,7 @@ export default function Dashboard(): JSX.Element {
       }
 
       // Mantener readyForNext=true para que el botón permanezca como "Verificar otro código"
-      // y el input siga deshabilitado hasta que el usuario lo reinicie manualmente.
-      setCode(""); // opcional: limpia el campo tras el intento
+      setCode("");
     } catch (err) {
       console.error(err);
       setStatus("error");
@@ -140,7 +138,6 @@ export default function Dashboard(): JSX.Element {
   }
 
   function onResetVerify(): void {
-    // Habilita el input y limpia todo para el siguiente intento
     setReadyForNext(false);
     setCode("");
     setMsg(null);
@@ -232,15 +229,7 @@ export default function Dashboard(): JSX.Element {
           <div className="row mt-4 mb-2">
             <div className="col-12 text-center">
               {msg && (
-                <p
-                  className={
-                    status === "ok"
-                      ? "message"
-                      : status === "fail"
-                      ? "message"
-                      : "message"
-                  }
-                >
+                <p className="message">
                   {msg}
                 </p>
               )}
