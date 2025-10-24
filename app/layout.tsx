@@ -12,8 +12,8 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Palacio · Verificación",
-  description: "Panel de verificación de códigos",
+  title: "El Palacio de Hierro",
+  description: "Panel de verificación de acceso.",
 };
 
 export default async function RootLayout({
