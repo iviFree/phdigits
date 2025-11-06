@@ -14,10 +14,12 @@ const limiter =
 
 type RpcRow = {
   ok: boolean | "t" | "true" | 1 | 0 | "f" | "false";
+  reason?: "ok" | "already_used" | "not_found" | string | null;
   usuario_id: string | null;
   correo: string | null;
   nombre_completo: string | null;
   consumido_en: string | null; // ISO
+  invitacion_tipo?: string | null;
 };
 
 type RpcResp = RpcRow[];
@@ -27,6 +29,14 @@ function rpcOkToBoolean(v: RpcRow["ok"] | undefined): boolean {
   if (v === true || v === 1 || v === "t" || v === "true") return true;
   if (v === false || v === 0 || v === "f" || v === "false") return false;
   return false;
+}
+
+function normalizeInv(raw?: string | null): "sencilla" | "doble" | undefined {
+  if (!raw) return undefined;
+  const v = String(raw).trim().toLowerCase();
+  if (v.includes("doble") || v === "2") return "doble";
+  if (v.includes("sencilla") || v === "simple" || v === "single" || v === "1") return "sencilla";
+  return v as any;
 }
 
 export default function Dashboard() {
@@ -39,6 +49,7 @@ export default function Dashboard() {
     nombre?: string;
     correo?: string;
     at?: string;
+    invitacion?: string;
   } | null>(null);
 
   // Controla: input deshabilitado + botón "Verificar otro código"
@@ -94,9 +105,9 @@ export default function Dashboard() {
     try {
       const supabase = getSupabaseBrowser();
 
-      // ❗ No usar genérico en rpc<...>; tipeamos la respuesta
+      // Llamada a la RPC V3
       const resp = (await supabase.rpc(
-        "rpc_verify_and_consume_code",
+        "rpc_verify_and_consume_code_v3",
         {
           p_codigo: parsed.data,
           p_counter_email: counterEmail,
@@ -106,24 +117,44 @@ export default function Dashboard() {
       const { data, error } = resp;
 
       if (error) {
-        // `error` ya es PostgrestError, no necesitamos `any`
         handleRpcError(error);
         return;
       }
 
       const rows = data ?? [];
       const row = rows[0];
-      console.log("RPC row:", row);
+      console.log("RPC v3 row:", row);
 
       const isOk = rpcOkToBoolean(row?.ok);
+      const reason = (row?.reason || "").toString();
 
       if (row && isOk) {
-        setMsg("ACCESO PERMITIDO");
+        const invitacionTipo = normalizeInv(row.invitacion_tipo) ?? undefined;
+        const etiquetaInv = invitacionTipo
+          ? ` — Invitación: ${invitacionTipo.toUpperCase()}`
+          : " — Invitación: NO DISPONIBLE";
+        setMsg(`ACCESO PERMITIDO${etiquetaInv}`);
         setLastSuccess({
           nombre: row.nombre_completo ?? undefined,
           correo: row.correo ?? undefined,
           at: row.consumido_en ?? undefined,
+          invitacion: invitacionTipo ?? undefined,
         });
+      } else if (row && reason === "already_used") {
+        const invitacionTipo = normalizeInv(row.invitacion_tipo) ?? undefined;
+        const etiquetaInv = invitacionTipo
+          ? ` — Invitación: ${invitacionTipo.toUpperCase()}`
+          : "";
+        setMsg(`ACCESO DENEGADO: CÓDIGO YA UTILIZADO${etiquetaInv}`);
+        // también mostramos detalle útil
+        setLastSuccess({
+          nombre: row.nombre_completo ?? undefined,
+          correo: row.correo ?? undefined,
+          at: row.consumido_en ?? undefined,
+          invitacion: invitacionTipo ?? undefined,
+        });
+      } else if (row && reason === "not_found") {
+        setMsg("ACCESO DENEGADO: CÓDIGO INEXISTENTE");
       } else {
         setMsg("ACCESO DENEGADO: CODIGO INVALIDO");
       }
