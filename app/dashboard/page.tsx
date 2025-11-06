@@ -12,9 +12,11 @@ const limiter =
     ? new LocalRateLimiter("verify-code", 30, 60_000)
     : null;
 
+type RpcReason = "ok" | "already_used" | "not_found";
+
 type RpcRow = {
   ok: boolean | "t" | "true" | 1 | 0 | "f" | "false";
-  reason?: "ok" | "already_used" | "not_found" | string | null;
+  reason?: RpcReason | string | null;
   usuario_id: string | null;
   correo: string | null;
   nombre_completo: string | null;
@@ -36,7 +38,7 @@ function normalizeInv(raw?: string | null): "sencilla" | "doble" | undefined {
   const v = String(raw).trim().toLowerCase();
   if (v.includes("doble") || v === "2") return "doble";
   if (v.includes("sencilla") || v === "simple" || v === "single" || v === "1") return "sencilla";
-  return v as any;
+  return v as "sencilla" | "doble" | undefined;
 }
 
 export default function Dashboard() {
@@ -105,7 +107,7 @@ export default function Dashboard() {
     try {
       const supabase = getSupabaseBrowser();
 
-      // Llamada a la RPC V3
+      // Llamada a la RPC V3 que retorna invitacion_tipo y reason
       const resp = (await supabase.rpc(
         "rpc_verify_and_consume_code_v3",
         {
@@ -121,15 +123,15 @@ export default function Dashboard() {
         return;
       }
 
-      const rows = data ?? [];
-      const row = rows[0];
+      const rows: RpcResp = Array.isArray(data) ? data : [];
+      const row: RpcRow | undefined = rows[0];
       console.log("RPC v3 row:", row);
 
       const isOk = rpcOkToBoolean(row?.ok);
-      const reason = (row?.reason || "").toString();
+      const reason = (row?.reason ?? "").toString() as RpcReason | string;
+      const invitacionTipo = normalizeInv(row?.invitacion_tipo ?? undefined) ?? undefined;
 
       if (row && isOk) {
-        const invitacionTipo = normalizeInv(row.invitacion_tipo) ?? undefined;
         const etiquetaInv = invitacionTipo
           ? ` — Invitación: ${invitacionTipo.toUpperCase()}`
           : " — Invitación: NO DISPONIBLE";
@@ -141,12 +143,8 @@ export default function Dashboard() {
           invitacion: invitacionTipo ?? undefined,
         });
       } else if (row && reason === "already_used") {
-        const invitacionTipo = normalizeInv(row.invitacion_tipo) ?? undefined;
-        const etiquetaInv = invitacionTipo
-          ? ` — Invitación: ${invitacionTipo.toUpperCase()}`
-          : "";
+        const etiquetaInv = invitacionTipo ? ` — Invitación: ${invitacionTipo.toUpperCase()}` : "";
         setMsg(`ACCESO DENEGADO: CÓDIGO YA UTILIZADO${etiquetaInv}`);
-        // también mostramos detalle útil
         setLastSuccess({
           nombre: row.nombre_completo ?? undefined,
           correo: row.correo ?? undefined,
@@ -291,6 +289,11 @@ export default function Dashboard() {
                     <p className="message">
                       Fecha y hora de entrada:{" "}
                       {new Date(lastSuccess.at).toLocaleString()}
+                    </p>
+                  )}
+                  {lastSuccess.invitacion && (
+                    <p className="message">
+                      Invitación: {lastSuccess.invitacion.toUpperCase()}
                     </p>
                   )}
                 </div>
